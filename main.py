@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AI Content Studio - Minimal Version
+AI Content Studio - Minimal Version with Interactive UI
 Uses only Python standard library - guaranteed to work
 """
 
@@ -56,9 +56,38 @@ class AIContentStudioHandler(http.server.BaseHTTPRequestHandler):
                         border-radius: 10px;
                         margin: 20px 0;
                     }
-                    a {
-                        color: #ffd700;
+                    .test-btn {
+                        background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 25px;
+                        cursor: pointer;
+                        margin: 10px;
+                        font-size: 1rem;
                         text-decoration: none;
+                        display: inline-block;
+                    }
+                    .test-btn:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                    }
+                    .result {
+                        margin-top: 20px;
+                        padding: 15px;
+                        background: rgba(0,0,0,0.3);
+                        border-radius: 10px;
+                        font-family: monospace;
+                        white-space: pre-wrap;
+                        text-align: left;
+                        max-height: 300px;
+                        overflow-y: auto;
+                    }
+                    .api-section {
+                        background: rgba(255,255,255,0.1);
+                        padding: 30px;
+                        border-radius: 15px;
+                        margin: 40px 0;
                     }
                 </style>
             </head>
@@ -74,13 +103,58 @@ class AIContentStudioHandler(http.server.BaseHTTPRequestHandler):
                         <p>Minimal version - uses only Python standard library!</p>
                     </div>
                     
-                    <div class="feature">
-                        <h3>🧪 Test API Endpoints</h3>
-                        <p><a href="/health">Health Check</a> | 
-                           <a href="/api/test">API Test</a> | 
-                           <a href="/api/scripts/generate?topic=AI">Generate Script</a></p>
+                    <div class="api-section">
+                        <h2>🧪 Test API Endpoints</h2>
+                        <button class="test-btn" onclick="testHealth()">Health Check</button>
+                        <button class="test-btn" onclick="testAPI()">API Test</button>
+                        <button class="test-btn" onclick="testScriptGeneration()">Generate Script</button>
+                        <div class="result" id="result">Click a button above to test the API endpoints...</div>
                     </div>
                 </div>
+
+                <script>
+                    async function testHealth() {
+                        showResult('Testing health endpoint...');
+                        try {
+                            const response = await fetch('/health');
+                            const data = await response.json();
+                            showResult(JSON.stringify(data, null, 2));
+                        } catch (error) {
+                            showResult('Error: ' + error.message);
+                        }
+                    }
+                    
+                    async function testAPI() {
+                        showResult('Testing API endpoint...');
+                        try {
+                            const response = await fetch('/api/test');
+                            const data = await response.json();
+                            showResult(JSON.stringify(data, null, 2));
+                        } catch (error) {
+                            showResult('Error: ' + error.message);
+                        }
+                    }
+                    
+                    async function testScriptGeneration() {
+                        showResult('Testing script generation...');
+                        try {
+                            const response = await fetch('/api/scripts/generate?topic=AI%20and%20Technology');
+                            const data = await response.json();
+                            showResult(JSON.stringify(data, null, 2));
+                        } catch (error) {
+                            showResult('Error: ' + error.message);
+                        }
+                    }
+                    
+                    function showResult(text) {
+                        document.getElementById('result').textContent = text;
+                    }
+                    
+                    // Auto-test health on load
+                    window.onload = function() {
+                        testHealth();
+                    };
+                </script>
             </body>
             </html>
             """
@@ -98,9 +172,11 @@ class AIContentStudioHandler(http.server.BaseHTTPRequestHandler):
                 "service": "ai-content-studio",
                 "version": "1.0.0",
                 "environment": "render",
-                "platform": "python-http-server"
+                "platform": "python-http-server",
+                "uptime": "running",
+                "features": ["health_check", "api_test", "script_generation"]
             }
-            self.wfile.write(json.dumps(response).encode())
+            self.wfile.write(json.dumps(response, indent=2).encode())
             
         elif self.path == '/api/test':
             self.send_response(200)
@@ -109,11 +185,17 @@ class AIContentStudioHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             
             response = {
-                "message": "API is working!",
+                "message": "API is working perfectly!",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
-                "success": True
+                "success": True,
+                "service": "ai-content-studio",
+                "endpoints": {
+                    "health": "/health",
+                    "api_test": "/api/test",
+                    "script_generation": "/api/scripts/generate?topic=YourTopic"
+                }
             }
-            self.wfile.write(json.dumps(response).encode())
+            self.wfile.write(json.dumps(response, indent=2).encode())
             
         elif self.path.startswith('/api/scripts/generate'):
             self.send_response(200)
@@ -138,6 +220,13 @@ Welcome to this exciting exploration of {topic}. Today we'll dive deep into the 
 1. **Innovation**: {topic} brings unprecedented opportunities
 2. **Efficiency**: Streamlined processes and workflows  
 3. **Growth**: Scalable solutions for the future
+4. **Impact**: Transforming how we work and live
+
+## Key Benefits
+- Increased productivity and efficiency
+- Enhanced decision-making capabilities
+- Streamlined workflows and processes
+- Competitive advantage in the market
 
 ## Call to Action
 Ready to explore {topic} further? Let's connect and discuss how this can benefit your organization.
@@ -145,6 +234,7 @@ Ready to explore {topic} further? Let's connect and discuss how this can benefit
 ---
 *Generated by AI Content Studio v1.0*
 *Timestamp: {datetime.now(timezone.utc).isoformat()}*
+*Word Count: {len(topic.split()) + 50} words*
             """.strip()
             
             response = {
@@ -152,17 +242,18 @@ Ready to explore {topic} further? Let's connect and discuss how this can benefit
                 "script": script,
                 "topic": topic,
                 "word_count": len(script.split()),
-                "generated_at": datetime.now(timezone.utc).isoformat()
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "service": "ai-content-studio"
             }
-            self.wfile.write(json.dumps(response).encode())
+            self.wfile.write(json.dumps(response, indent=2).encode())
             
         else:
             self.send_response(404)
             self.send_header('Content-type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
-            response = {"error": "Not found"}
-            self.wfile.write(json.dumps(response).encode())
+            response = {"error": "Not found", "available_endpoints": ["/", "/health", "/api/test", "/api/scripts/generate"]}
+            self.wfile.write(json.dumps(response, indent=2).encode())
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
